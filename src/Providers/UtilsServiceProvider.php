@@ -1,9 +1,9 @@
 <?php
 
-namespace Pdemarco\LaravelUtils\Providers;
+namespace PeterDKC\Sprocket\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Pdemarco\LaravelUtils\Commands\MakeDatabase;
+use PeterDKC\Sprocket\Commands\MakeDatabase;
 
 class UtilsServiceProvider extends ServiceProvider
 {

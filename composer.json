@@ -1,5 +1,5 @@
 {
-    "name": "pdemarco/laravel-utils",
+    "name": "peterdkc/sprocket",
     "description": "A set of utilities for Laravel projects.",
     "type": "utilities",
     "license": "MIT",
@@ -25,19 +25,19 @@
     },
     "autoload": {
         "psr-4": {
-            "Pdemarco\\LaravelUtils\\": "src"
+            "PeterDKC\\Sprocket\\": "src"
         },
         "files": ["src/Helpers.php"]
     },
     "autoload-dev": {
         "psr-4": {
-            "Pdemarco\\LaravelUtils\\Tests\\": "tests"
+            "PeterDKC\\Sprocket\\Tests\\": "tests"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "Pdemarco\\LaravelUtils\\Providers\\UtilsServiceProvider"
+                "PeterDKC\\Sprocket\\Providers\\UtilsServiceProvider"
             ],
             "aliases": {}
         }

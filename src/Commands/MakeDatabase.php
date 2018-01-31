@@ -1,10 +1,10 @@
 <?php
 
-namespace Pdemarco\LaravelUtils\Commands;
+namespace PeterDKC\Sprocket\Commands;
 
 use Exception;
-use Pdemarco\LaravelUtils\Database\Mangler;
-use Pdemarco\LaravelUtils\Commands\BaseCommand;
+use PeterDKC\Sprocket\Database\Mangler;
+use PeterDKC\Sprocket\Commands\BaseCommand;
 
 class MakeDatabase extends BaseCommand
 {
@@ -18,7 +18,7 @@ class MakeDatabase extends BaseCommand
     /**
      * An instance of DatabaseMangler.
      *
-     * @var \Pdemarco\LaravelUtils\DatabaseMangler
+     * @var \PeterDKC\Sprocket\DatabaseMangler
      */
     protected $mangler;
 

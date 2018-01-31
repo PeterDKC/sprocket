@@ -1,12 +1,12 @@
 <?php
 
-namespace Pdemarco\LaravelUtils\Tests\Command;
+namespace PeterDKC\Sprocket\Tests\Command;
 
 use Mockery as m;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Contracts\Console\Kernel;
-use Pdemarco\LaravelUtils\Tests\TestCase;
-use Pdemarco\LaravelUtils\Commands\MakeDatabase;
+use PeterDKC\Sprocket\Tests\TestCase;
+use PeterDKC\Sprocket\Commands\MakeDatabase;
 
 class MakeDatabaseTest extends TestCase
 {

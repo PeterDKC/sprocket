@@ -1,9 +1,9 @@
 <?php
 
-namespace Pdemarco\LaravelUtils\Tests;
+namespace PeterDKC\Sprocket\Tests;
 
 use Orchestra\Testbench\TestCase as BaseTestCase;
-use Pdemarco\LaravelUtils\Providers\UtilsServiceProvider;
+use PeterDKC\Sprocket\Providers\UtilsServiceProvider;
 
 class TestCase extends BaseTestCase
 {

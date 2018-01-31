@@ -1,6 +1,6 @@
 <?php
 
-namespace Pdemarco\LaravelUtils\Database;
+namespace PeterDKC\Sprocket\Database;
 
 use Exception;
 use Illuminate\Support\Facades\DB;

@@ -1,6 +1,6 @@
 <?php
 
-namespace Pdemarco\LaravelUtils\Commands;
+namespace PeterDKC\Sprocket\Commands;
 
 use Illuminate\Console\Command;
 
