@@ -37,7 +37,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "PeterDKC\\Sprocket\\Providers\\UtilsServiceProvider"
+                "PeterDKC\\Sprocket\\Providers\\SprocketServiceProvider"
             ],
             "aliases": {}
         }

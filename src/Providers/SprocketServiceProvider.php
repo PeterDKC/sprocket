@@ -5,7 +5,7 @@ namespace PeterDKC\Sprocket\Providers;
 use Illuminate\Support\ServiceProvider;
 use PeterDKC\Sprocket\Commands\MakeDatabase;
 
-class UtilsServiceProvider extends ServiceProvider
+class SprocketServiceProvider extends ServiceProvider
 {
     /**
      * Register the package services.
