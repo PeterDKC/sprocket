@@ -1,2 +1,3 @@
-# sprocket
-Sprocket is a collection of artisan commands that perform common dev operations on Laravel projects.
+**Laravel Utils**
+
+*A set of utilities for Laravel projects.*
