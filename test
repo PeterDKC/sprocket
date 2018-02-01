@@ -1,0 +1,4 @@
+#!/bin/bash
+
+clear
+phpdbg -qrr ./vendor/bin/phpunit --color=never

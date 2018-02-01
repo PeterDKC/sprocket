@@ -13,7 +13,7 @@ class MakeDatabase extends BaseCommand
      *
      * @var string
      */
-    protected $description = 'Creates a MySQL Database and User for development.';
+    protected $description = 'Creates or tears down a local development Database and User.';
 
     /**
      * An instance of DatabaseMangler.
@@ -27,21 +27,21 @@ class MakeDatabase extends BaseCommand
      *
      * @var string
      */
-    protected $user;
+    protected $user = '';
 
     /**
      * The local user's password.
      *
      * @var string
      */
-    protected $password;
+    protected $password = '';
 
     /**
      * The signature of the command.
      *
      * @var string
      */
-    protected $signature = 'lu:make-database
+    protected $signature = 'sprocket:makedb
         {--t|teardown : Tear down the database and user in your .env}';
 
     /**
@@ -52,11 +52,13 @@ class MakeDatabase extends BaseCommand
     public function handle()
     {
         $this->intro()
-            ->confirmDbType();
+            ->getPrivelegedCredentials();
 
-        $this->getPrivelegedCredentials();
-
-        $this->mangler = new Mangler($this->user, $this->password);
+        $this->mangler = new Mangler(
+            $this->user,
+            $this->password,
+            $this
+        );
 
         if ($this->option('teardown')) {
             $this->tearDown();
@@ -68,33 +70,19 @@ class MakeDatabase extends BaseCommand
     }
 
     /**
-     * Throw an error if the database connection isn't MySQL.
-     *
-     * @return $this
-     */
-    protected function confirmDbType()
-    {
-        if (config('database.default') !== 'mysql') {
-            $this->info('');
-            $this->error('Unfortunately this command is only designed to work with MySQL databases.');
-            $this->info('');
-
-            $this->info('Please adjust your .env or create your database manually.');
-            $this->info('Bye!');
-
-            die;
-        }
-
-        return $this;
-    }
-
-    /**
      * Get the Priveleged Credentials to create our DB and User.
      *
      * @return $this
      */
     protected function getPrivelegedCredentials()
     {
+        if (config('database.default') === 'sqlite') {
+            $this->comment('Sqlite Database configured.');
+            $this->comment('Skipping credentials.');
+
+            return $this;
+        }
+
         $this->comment(
             'We need a login that can create / delete other users and ' .
             'their associated databases on your local MySQL instance.'
@@ -121,7 +109,7 @@ class MakeDatabase extends BaseCommand
     protected function intro()
     {
         $this->rule();
-        $this->info('Creates a local MySQL databse and user based on .env values.');
+        $this->info('Creates a local development databse and user based on .env values.');
         $this->rule();
 
         return $this;

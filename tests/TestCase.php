@@ -3,7 +3,7 @@
 namespace PeterDKC\Sprocket\Tests;
 
 use Orchestra\Testbench\TestCase as BaseTestCase;
-use PeterDKC\Sprocket\Providers\UtilsServiceProvider;
+use PeterDKC\Sprocket\Providers\SprocketServiceProvider;
 
 class TestCase extends BaseTestCase
 {
@@ -16,7 +16,7 @@ class TestCase extends BaseTestCase
     protected function getPackageProviders($app)
     {
         return [
-            UtilsServiceProvider::class,
+            SprocketServiceProvider::class,
         ];
     }
 }

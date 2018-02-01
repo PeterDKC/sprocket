@@ -4,66 +4,53 @@ namespace PeterDKC\Sprocket\Database;
 
 use Exception;
 use Illuminate\Support\Facades\DB;
+use PeterDKC\Sprocket\Database\User\Manager;
+use PeterDKC\Sprocket\Traits\ManagesDatabaseConfigurations;
 
 class Mangler
 {
-    /**
-     * The MySQL host.
-     *
-     * @var string
-     */
-    protected $host;
-
-    /**
-     * The local database to create.
-     *
-     * @var string
-     */
-    protected $database;
-
-    /**
-     * The password to give the created user.
-     *
-     * @var string
-     */
-    protected $password;
-
-    /**
-     * The prefix of the mysql configuration items.
-     *
-     * @var string
-     */
-    protected $prefix = 'database.connections.mysql.';
-
-    /**
-     * The user to create.
-     *
-     * @var string
-     */
-    protected $username;
+    use ManagesDatabaseConfigurations;
 
     /**
      * The DBal Schema Manager.
      *
      * @var \Doctrine\DBAL\Schema\AbstractSchemaManager
      */
-    protected $manager;
+    protected $dbManager;
+
+    /**
+     * The command that called us.
+     *
+     * @var \PeterDKC\Sprocket\Database\Mangler
+     */
+    protected $command;
+
+
+    /**
+     * The drivers that require a User.
+     *
+     * @var array
+     */
+    protected $needsUser = [
+        'mysql',
+        'postgres',
+        'sqlsrv'
+    ];
 
     /**
      * Contruct a new instance of the Mangler.
      *
      * @param string $username
      * @param string $password
+     * @param \PeterDKC\Sprocket\Database\Mangler $command
      */
-    public function __construct(string $username, string $password)
+    public function __construct(string $username, string $password, $command)
     {
-        $this->database = $this->value('database');
-        $this->user = $this->value('username');
-        $this->password = $this->value('password');
+        $this->command = $command;
 
         $this->overwrite($username, $password);
 
-        $this->manager = DB::getDoctrineSchemaManager();
+        $this->dbManager = DB::getDoctrineSchemaManager();
     }
 
     /**
@@ -75,21 +62,8 @@ class Mangler
      */
     public function makeDatabase()
     {
-        $this->createDatabase();
-
-        // echo 'Created database ' . $this->database . "\n";
-
-        // if (! $this->createUser()) {
-        //     throw new Exception('Couldn\'t create user ' . $this->userWithHost());
-        // }
-
-        // echo 'Created user ' . $this->userWithHost() . "\n";
-
-        // if (! $this->grantPrivileges()) {
-        //     throw new Exception('Couldn\'t grant user privileges.');
-        // }
-
-        // echo 'Granted priveleges on ' . $this->database . "\n";
+        $this->createDatabase()
+            ->createUser();
     }
 
     /**
@@ -99,37 +73,28 @@ class Mangler
      */
     public function tearDown()
     {
-        if (! $this->dropUser()) {
-            throw new Exception('Couldn\'t drop user ' . $this->userWithHost());
-        }
-
-        echo 'Dropped user ' . $this->userWithHost() . "\n";
-
-        if (! $this->flush()) {
-            throw new Exception('Couldn\t flush privileges.');
-        }
-
-        echo 'Flushed MySQL Privileges.' . "\n";
-
-        if (! $this->dropDatabase()) {
-            throw new Exception('Couldn\'t drop database ' . $this->database);
-        }
-
-        echo 'Dropped Database ' . $this->database . "\n";
+        $this->dropUser()
+            ->dropDatabase();
     }
 
     /**
      * Create the database if not exists.
      *
-     * @return bool
+     * @return $this
      */
     protected function createDatabase()
     {
-        $this->manager->dropAndCreateDatabase($this->database);
+        $this->dbManager->dropAndCreateDatabase($this->database);
 
-        if (! collect($this->manager->listDatabases())->contains($this->database)) {
-            throw new Exception("Couldn't create {$this->database}.");
+        if (! $this->databaseExists()) {
+            $this->command->error("Couldn't create {$this->database}.");
+
+            exit;
         }
+
+        $this->command->info('Created Database ' . $this->database);
+
+        return $this;
     }
 
     /**
@@ -139,13 +104,38 @@ class Mangler
      */
     protected function createUser()
     {
-        $localPassword = $this->value('password');
+        if (! $this->needsUser()) {
+            $this->command->info('Current driver does not require a user.');
 
-        return DB::statement(
-            'CREATE USER IF NOT EXISTS ' .
-            $this->userWithHost() . ' ' .
-            "IDENTIFIED BY '{$localPassword}'"
-        );
+            return $this;
+        }
+
+        try {
+            $this->makeUserManager()
+                ->createUser();
+        } catch (Exception $exception) {
+            $this->error(
+                'ERROR CREATING USER',
+                $exception
+            );
+
+            exit;
+        }
+
+        $this->command->info('Created User ' . $this->username);
+
+        return $this;
+    }
+
+    /**
+     * Check to see if the database exists.
+     *
+     * @return bool
+     */
+    protected function databaseExists()
+    {
+        return collect($this->dbManager->listDatabases())
+            ->contains($this->database);
     }
 
     /**
@@ -155,9 +145,19 @@ class Mangler
      */
     protected function dropDatabase()
     {
-        return DB::statement(
-            'DROP DATABASE IF EXISTS ' . $this->database
-        );
+        if ($this->databaseExists()) {
+            $this->dbManager->dropDatabase(
+                $this->database
+            );
+        }
+
+        if ($this->databaseExists()) {
+            $this->error('Could not remove ' . $this->database);
+
+            exit;
+        }
+
+        $this->command->info('Removed ' . $this->database);
     }
 
     /**
@@ -167,34 +167,82 @@ class Mangler
      */
     protected function dropUser()
     {
-        return DB::statement(
-            'DROP USER IF EXISTS ' . $this->userWithHost()
-        );
+        if ($this->needsUser()) {
+            try {
+                $this->makeUserManager()
+                    ->dropUser();
+            } catch (Exception $exception) {
+                $this->error(
+                    'ERROR DROPPING USER',
+                    $exception
+                );
+
+                exit;
+            }
+
+            $this->command->info('Dropped User ' . $this->username);
+
+            return $this;
+        }
+
+        $this->comment('No User for this driver type.');
+
+        return $this;
     }
 
     /**
-     * Flush the MySQL Privileges.
+     * Format and output an error.
      *
-     * @return bool
+     * @param  string $message
+     * @param  \Exception $exception
+     *
+     * @return void
      */
-    protected function flush()
+    protected function error(string $message, $exception = null)
     {
-        return DB::statement(
-            'FLUSH PRIVILEGES'
+        $lineLength = strlen($message) + 4;
+
+        $this->command->error(console_line($lineLength));
+        $this->command->error(
+            '| ' . $message . ' |'
         );
+        $this->command->error(console_line($lineLength));
+
+        if ($exception) {
+            $this->command->error(
+                $exception->getMessage()
+            );
+        }
     }
 
     /**
-     * Grant Priveleges to the created User.
+     * Make an instance of a User Manager.
+     *
+     * @return void
+     */
+    protected function makeUserManager()
+    {
+        return app()
+            ->makeWith(
+                $this->requiredManager(),
+                ['command' => $this->command]
+            )
+            ->setValues(
+                $this->username,
+                $this->password,
+                $this->database
+            );
+    }
+
+    /**
+     * See if the current driver requires a User.
      *
      * @return bool
      */
-    protected function grantPrivileges()
+    protected function needsUser()
     {
-        return DB::statement(
-            'GRANT ALL PRIVILEGES ON ' . $this->database . '.* ' .
-            'TO ' . $this->userWithHost()
-        );
+        return collect($this->needsUser)
+            ->contains($this->value('driver'));
     }
 
     /**
@@ -207,35 +255,26 @@ class Mangler
      */
     protected function overwrite(string $username, string $password)
     {
+        // extract the current values
+        $this->database = $this->value('database');
+        $this->username = $this->value('username');
+        $this->password = $this->value('password');
+
+        // overwrite the config with our privileged values
         config([$this->prefix . 'database' => '']);
         config([$this->prefix . 'username' => $username]);
         config([$this->prefix . 'password' => $password]);
     }
 
     /**
-     * get the User + Host value.
+     * Return a FQCN for the User Manager associated to the driver.
      *
-     * @return string
+     * @return \PeterDKC\Sprocket\Database\User\Manager
      */
-    protected function userWithHost()
+    protected function requiredManager()
     {
-        return implode('', [
-            '\'',
-            $this->value('username'),
-            '\'@\'',
-            $this->host,
-            '\''
-        ]);
-    }
-
-    /**
-     * Get the item from config.
-     *
-     * @param  string $item
-     * @return string
-     */
-    protected function value(string $item)
-    {
-        return config($this->prefix . $item);
+        return 'PeterDKC\Sprocket\Database\User\\' .
+            ucwords($this->driver) .
+            'Manager';
     }
 }
