@@ -16,6 +16,9 @@ class SprocketServiceProvider extends ServiceProvider
     {
         $this->commands([
             MakeDatabase::class,
+            \PeterDKC\Sprocket\Console\Commands\ExampleSimple::class,
+            \PeterDKC\Sprocket\Console\Commands\ExampleArgument::class,
+            \PeterDKC\Sprocket\Console\Commands\ExampleInput::class,
         ]);
     }
 
