@@ -62,8 +62,7 @@ class Mangler
      */
     public function makeDatabase()
     {
-        $this->createDatabase()
-            ->createUser();
+        $this->createDatabase();
     }
 
     /**
@@ -73,8 +72,7 @@ class Mangler
      */
     public function tearDown()
     {
-        $this->dropUser()
-            ->dropDatabase();
+        $this->dropUser();
     }
 
     /**
@@ -87,14 +85,14 @@ class Mangler
         $this->dbManager->dropAndCreateDatabase($this->database);
 
         if (! $this->databaseExists()) {
-            $this->command->error("Couldn't create {$this->database}.");
+            $this->command->error("ERROR! Couldn't create database {$this->database}.");
 
-            exit;
+            return;
         }
 
         $this->command->info('Created Database ' . $this->database);
 
-        return $this;
+        $this->createUser();
     }
 
     /**
@@ -107,24 +105,13 @@ class Mangler
         if (! $this->needsUser()) {
             $this->command->info('Current driver does not require a user.');
 
-            return $this;
+            return;
         }
 
-        try {
-            $this->makeUserManager()
-                ->createUser();
-        } catch (Exception $exception) {
-            $this->error(
-                'ERROR CREATING USER',
-                $exception
-            );
-
-            exit;
-        }
+        $this->makeUserManager()
+            ->createUser();
 
         $this->command->info('Created User ' . $this->username);
-
-        return $this;
     }
 
     /**
@@ -152,12 +139,10 @@ class Mangler
         }
 
         if ($this->databaseExists()) {
-            $this->error('Could not remove ' . $this->database);
-
-            exit;
+            throw new Exception('ERROR! Could not remove ' . $this->database);
         }
 
-        $this->command->info('Removed ' . $this->database);
+        $this->command->info('Dropped Database ' . $this->database);
     }
 
     /**
@@ -168,51 +153,19 @@ class Mangler
     protected function dropUser()
     {
         if ($this->needsUser()) {
-            try {
-                $this->makeUserManager()
-                    ->dropUser();
-            } catch (Exception $exception) {
-                $this->error(
-                    'ERROR DROPPING USER',
-                    $exception
-                );
-
-                exit;
-            }
+            $this->makeUserManager()
+                ->dropUser();
 
             $this->command->info('Dropped User ' . $this->username);
 
-            return $this;
+            $this->dropDatabase();
+
+            return;
         }
 
-        $this->comment('No User for this driver type.');
+        $this->command->comment('No User for this driver type.');
 
-        return $this;
-    }
-
-    /**
-     * Format and output an error.
-     *
-     * @param  string $message
-     * @param  \Exception $exception
-     *
-     * @return void
-     */
-    protected function error(string $message, $exception = null)
-    {
-        $lineLength = strlen($message) + 4;
-
-        $this->command->error(console_line($lineLength));
-        $this->command->error(
-            '| ' . $message . ' |'
-        );
-        $this->command->error(console_line($lineLength));
-
-        if ($exception) {
-            $this->command->error(
-                $exception->getMessage()
-            );
-        }
+        $this->dropDatabase();
     }
 
     /**

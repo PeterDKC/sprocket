@@ -3,6 +3,7 @@
 namespace PeterDKC\Sprocket\Commands;
 
 use Exception;
+use PDOException;
 use PeterDKC\Sprocket\Database\Mangler;
 use PeterDKC\Sprocket\Commands\BaseCommand;
 
@@ -27,7 +28,7 @@ class MakeDatabase extends BaseCommand
      *
      * @var string
      */
-    protected $user = '';
+    protected $username = '';
 
     /**
      * The local user's password.
@@ -42,7 +43,9 @@ class MakeDatabase extends BaseCommand
      * @var string
      */
     protected $signature = 'sprocket:makedb
-        {--t|teardown : Tear down the database and user in your .env}';
+        {--t|teardown : Tear down the database and user in your .env}
+        {--u|username= : The privileged local user.}
+        {--p|password= : The privileged user\'s password.}';
 
     /**
      * Execute the console command.
@@ -54,11 +57,17 @@ class MakeDatabase extends BaseCommand
         $this->intro()
             ->getPrivelegedCredentials();
 
-        $this->mangler = new Mangler(
-            $this->user,
-            $this->password,
-            $this
-        );
+        try {
+            $this->mangler = app(Mangler::class, [
+                'username' => $this->username,
+                'password' => $this->password,
+                'command' => $this
+            ]);
+        } catch (PDOException $exception) {
+            $this->error($exception->getMessage());
+
+            return;
+        }
 
         if ($this->option('teardown')) {
             $this->tearDown();
@@ -83,20 +92,32 @@ class MakeDatabase extends BaseCommand
             return $this;
         }
 
-        $this->comment(
-            'We need a login that can create / delete other users and ' .
-            'their associated databases on your local MySQL instance.'
-        );
-        $this->comment('This is generally the `root` user.');
+        if (! $this->option('username') || ! $this->option('password')) {
+            // @codeCoverageIgnoreStart
+            $this->comment(
+                'We need a login that can create / delete other users and ' .
+                'their associated databases on your local MySQL instance.'
+            );
+            $this->comment('This is generally the `root` user.');
 
-        $this->rule();
+            $this->rule();
+            // @codeCoverageIgnoreEnd
+        }
 
-        $this->user = $this->anticipate(
-            'Please enter your local priveleged database user',
-            ['root', 'homestead', 'laravel']
-        );
+        $this->username = $this->option('username') ?:
+            // @codeCoverageIgnoreStart
+            $this->anticipate(
+                'Please enter your local priveleged database user',
+                ['root', 'homestead', 'laravel']
+            );
+            // @codeCoverageIgnoreEnd
 
-        $this->password = $this->secret('Please enter the password for the priveleged user');
+        $this->password = $this->option('password') ?:
+            // @codeCoverageIgnoreStart
+            $this->secret(
+                'Please enter the password for the priveleged user'
+            );
+            // @codeCoverageIgnoreEnd
 
         return $this;
     }
@@ -125,10 +146,11 @@ class MakeDatabase extends BaseCommand
         try {
             $this->mangler->makeDatabase();
         } catch (Exception $exception) {
-            throw $exception;
-            // $this->error($exception->getMessage());
-
-            exit;
+            dd('halted for normal Exception');
+            $this->error('! ' . $exception->getMessage());
+        } catch (PDOException $exception) {
+            dd('halted for PDO');
+            $this->error('! ' . $exception->getMessage());
         }
     }
 
@@ -143,8 +165,6 @@ class MakeDatabase extends BaseCommand
             $this->mangler->tearDown();
         } catch (Exception $exception) {
             $this->error($exception->getMessage());
-
-            exit;
         }
     }
 }
