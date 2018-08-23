@@ -143,15 +143,7 @@ class MakeDatabase extends BaseCommand
      */
     protected function makeDatabase()
     {
-        try {
-            $this->mangler->makeDatabase();
-        } catch (Exception $exception) {
-            dd('halted for normal Exception');
-            $this->error('! ' . $exception->getMessage());
-        } catch (PDOException $exception) {
-            dd('halted for PDO');
-            $this->error('! ' . $exception->getMessage());
-        }
+        $this->mangler->makeDatabase();
     }
 
     /**
