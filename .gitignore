@@ -1,4 +1,5 @@
 /vendor/
+/coverage/
 /storage/
 /bootstrap/cache/*
 /storage/coverage/
