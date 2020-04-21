@@ -15,7 +15,7 @@
 
 Install through composer:
 
-    composer require peterdkc/sprocket
+    composer require --dev peterdkc/sprocket
 
 <a name="usage"></a>
 # Usage
